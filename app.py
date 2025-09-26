@@ -11,6 +11,20 @@ from typing import Dict, Optional
 import pandas as pd
 import numpy as np
 
+# SAFE FLAGS
+def _get_bool(name: str, default=False) -> bool:
+    val = os.environ.get(name)
+    if val is None:
+        try:
+            val = st.secrets.get(name, "true" if default else "false")
+        except Exception:
+            val = "true" if default else "false"
+    return str(val).strip().lower() in ("1", "true", "yes", "on")
+
+ADMIN_MODE = _get_bool("ADMIN_MODE", False)
+READ_ONLY  = _get_bool("READ_ONLY", False)
+ADMIN_UI   = ADMIN_MODE and not READ_ONLY
+
 # Import storage functions with error handling
 try:
     from storage import (
@@ -40,15 +54,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Admin Mode Detection
-try:
-    ADMIN_MODE = (
-        os.environ.get("ADMIN_MODE", "").lower() == "true" or
-        (hasattr(st, 'secrets') and "ADMIN_MODE" in st.secrets and str(st.secrets["ADMIN_MODE"]).lower() == "true")
-    )
-except:
-    ADMIN_MODE = os.environ.get("ADMIN_MODE", "").lower() == "true"
 
 MAX_VIDEO_MB = 50
 UPLOAD_ROOT = "uploaded_content"
@@ -109,6 +114,9 @@ def load_videos_json():
 
 def save_videos_json(videos_dict):
     """Save video mappings to videos.json"""
+    if not ADMIN_UI:
+        st.warning("Uploads are disabled.")
+        return False
     try:
         with open(VIDEOS_JSON, 'w') as f:
             json.dump(videos_dict, f, indent=2)
@@ -123,6 +131,8 @@ def get_exercise_id(exercise_name):
 
 def render_admin_intro_video_manager():
     """Simplified admin interface for intro video only"""
+    if not ADMIN_UI:
+        return
     videos = load_videos_json()
 
     source_type = st.selectbox(
@@ -169,7 +179,7 @@ def render_admin_intro_video_manager():
 
 def render_admin_video_manager():
     """Render admin-only video management panel"""
-    if not ADMIN_MODE:
+    if not ADMIN_UI:
         return
 
     with st.expander("🔧 Admin: Video Manager"):
@@ -464,20 +474,18 @@ def render_enhanced_exercise_card(exercise, idx, workout_date):
         # Right column: Video
         with col2:
             st.markdown("#### 🎥 Exercise Demo")
-
             videos = load_videos_json()
+            src = videos.get(exercise_id)
 
-            if exercise_id in videos:
-                video_source = videos[exercise_id]
+            # Viewer: always allowed to watch
+            if src:
                 try:
-                    if video_source.startswith(("http://", "https://")):
-                        # For URLs, use standard video player
-                        st.video(video_source)
-                    elif os.path.exists(video_source):
-                        # For local files, use HTML5 video with loop
-                        with open(video_source, 'rb') as video_file:
+                    if src.startswith(("http://", "https://")):
+                        st.video(src)
+                    elif os.path.exists(src):
+                        with open(src, 'rb') as video_file:
                             video_bytes = video_file.read()
-                            st.video(video_bytes, loop=True)
+                            st.video(video_bytes)
                     else:
                         st.info("Video file not found. Contact admin to update.")
                 except Exception as e:
@@ -485,80 +493,109 @@ def render_enhanced_exercise_card(exercise, idx, workout_date):
             else:
                 st.info("No video available for this exercise yet.")
 
-            # Admin video upload section - directly in the exercise card
-            if ADMIN_MODE:
-                st.markdown("---")
-                st.markdown("##### 🔧 Admin: Add/Update Video")
-
-                source_type = st.selectbox(
-                    "Source",
-                    ["Upload File", "URL"],
-                    key=f"source_{exercise_id}_{idx}"
-                )
-
-                if source_type == "URL":
-                    video_url = st.text_input(
-                        "Video URL",
-                        value=videos.get(exercise_id, ""),
-                        key=f"url_{exercise_id}_{idx}"
-                    )
-                    if st.button("Save URL", key=f"save_url_{exercise_id}_{idx}"):
-                        videos[exercise_id] = video_url
-                        if save_videos_json(videos):
-                            st.success(f"Video URL saved!")
-                            st.rerun()
-                else:
+            # Admin-only controls
+            if ADMIN_UI:
+                with st.expander(f"🔧 Admin: Set / Change Video", expanded=False):
                     uploaded_file = st.file_uploader(
-                        "Choose video file",
-                        type=['mp4', 'mov'],
-                        key=f"upload_{exercise_id}_{idx}"
+                        "Upload MP4/MOV",
+                        type=['mp4', 'mov', "m4v"],
+                        key=f"admin_upload_{exercise_id}"
                     )
-                    if uploaded_file and st.button("Upload Video", key=f"upload_btn_{exercise_id}_{idx}"):
-                        try:
-                            video_path = os.path.join(VIDEOS_DIR, f"{exercise_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4")
-                            with open(video_path, 'wb') as f:
-                                f.write(uploaded_file.getbuffer())
-                            videos[exercise_id] = video_path
-                            if save_videos_json(videos):
-                                st.success(f"Video uploaded successfully!")
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"Upload failed: {str(e)}")
+                    video_url = st.text_input(
+                        "...or paste a video URL",
+                        value=src if src and src.startswith("http") else "",
+                        key=f"admin_url_{exercise_id}"
+                    )
 
-                # Remove video option
-                if exercise_id in videos:
-                    if st.button("Remove Video", key=f"remove_{exercise_id}_{idx}"):
-                        del videos[exercise_id]
-                        save_videos_json(videos)
-                        st.rerun()
+                    b1, b2 = st.columns(2)
+                    with b1:
+                        if st.button("Save Video", key=f"admin_save_{exercise_id}", type="primary"):
+                            source_to_save = None
+                            if uploaded_file:
+                                try:
+                                    video_path = os.path.join(VIDEOS_DIR, f"{exercise_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4")
+                                    with open(video_path, 'wb') as f:
+                                        f.write(uploaded_file.getbuffer())
+                                    source_to_save = video_path
+                                except Exception as e:
+                                    st.error(f"Upload failed: {str(e)}")
+                            elif video_url:
+                                source_to_save = video_url
+
+                            if source_to_save:
+                                videos[exercise_id] = source_to_save
+                                if save_videos_json(videos):
+                                    st.success(f"Video saved for {exercise_name}!")
+                                    st.rerun()
+                            else:
+                                st.warning("Please upload a file or provide a URL.")
+                    with b2:
+                        if src and st.button("Delete Video", key=f"admin_delete_{exercise_id}"):
+                            if exercise_id in videos:
+                                del videos[exercise_id]
+                                if save_videos_json(videos):
+                                    st.success(f"Video removed for {exercise_name}.")
+                                    st.rerun()
 
 def render_homepage_intro_video():
-    """Render intro video at bottom of homepage"""
+    """Render intro video at bottom of homepage with admin controls."""
     videos = load_videos_json()
+    src = videos.get("__intro__")
 
-    if "__intro__" in videos:
-        st.markdown("---")
-        st.markdown("### 🎥 Welcome Video")
+    st.markdown("---")
+    st.markdown("### 🎥 Welcome Video")
 
-        # --- MODIFICATION START: Shrink video layout ---
-        # Use columns to create a narrower, centered view for the video
-        _ , col_vid, _ = st.columns([1, 2, 1])
-        with col_vid:
-            video_source = videos["__intro__"]
+    # Viewer: always allowed to watch
+    _ , col_vid, _ = st.columns([1, 2, 1])
+    with col_vid:
+        if src:
             try:
-                if video_source.startswith(("http://", "https://")):
-                    st.video(video_source)
-                elif os.path.exists(video_source):
-                    st.video(video_source)
+                if src.startswith(("http://", "https://")):
+                    st.video(src)
+                elif os.path.exists(src):
+                    st.video(src)
                 else:
-                    st.info("Video file not found")
+                    st.info("Welcome video file not found.")
             except Exception as e:
                 st.error(f"Error loading video: {str(e)}")
-        # --- MODIFICATION END ---
+        else:
+            st.info("Welcome video has not been set yet.")
 
-    # Admin controls for intro video (only in admin mode)
-    if ADMIN_MODE:
-        render_admin_video_manager()
+    # Admin-only controls
+    if ADMIN_UI:
+        with st.expander("🔧 Admin: Set / Change Welcome Video", expanded=False):
+            up = st.file_uploader("Upload MP4/MOV/M4V", type=["mp4", "mov", "m4v"], key="admin_intro_upload")
+            url = st.text_input("...or paste a video URL", placeholder="https://youtube.com/...", key="admin_intro_url")
+
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("Save Video", type="primary", key="admin_intro_save"):
+                    source_to_save = None
+                    if up:
+                        try:
+                            video_path = os.path.join(VIDEOS_DIR, f"intro_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4")
+                            with open(video_path, 'wb') as f:
+                                f.write(up.getbuffer())
+                            source_to_save = video_path
+                        except Exception as e:
+                            st.error(f"Upload failed: {str(e)}")
+                    elif url:
+                        source_to_save = url
+
+                    if source_to_save:
+                        videos["__intro__"] = source_to_save
+                        if save_videos_json(videos):
+                            st.success("Saved welcome video.")
+                            st.rerun()
+                    else:
+                        st.warning("Please upload a file or provide a URL.")
+            with col2:
+                 if src and st.button("Delete Video", key="admin_intro_delete"):
+                    if "__intro__" in videos:
+                        del videos["__intro__"]
+                        if save_videos_json(videos):
+                            st.success("Deleted welcome video.")
+                            st.rerun()
 
 # ============================================================================
 # STYLES
@@ -768,7 +805,7 @@ def render_homepage():
     st.markdown("## 🏠 Welcome to Your Fitness Journey!")
 
     # Admin photo upload section
-    if ADMIN_MODE:
+    if ADMIN_UI:
         with st.expander("🔧 Admin: Upload Coach Photo"):
             uploaded_photo = st.file_uploader(
                 "Choose your photo to display on the homepage",
@@ -790,7 +827,7 @@ def render_homepage():
     with col2:
         if os.path.exists("coach_photo.jpg"):
             st.image("coach_photo.jpg", caption="Hourglass Fitness", width=450)
-        elif ADMIN_MODE:
+        elif ADMIN_UI:
             st.info("👆 Use the admin panel above to upload your photo")
 
     st.markdown("---")
@@ -860,71 +897,74 @@ def render_homepage():
             """)
 
     with tab_video:
-        st.markdown("#### Add or View the 'Getting Started' Video")
-        st.info("You can upload a video file directly or provide a URL (e.g., from YouTube).")
-
+        st.markdown("#### 'Getting Started' Video")
         videos = load_videos_json()
+        src = videos.get("__getting_started__")
 
-        # Input fields for video source
-        uploaded_file = st.file_uploader(
-            "Upload a video file",
-            type=["mp4", "mov", "m4v"],
-            key="getting_started_uploader"
-        )
-        video_url = st.text_input(
-            "Or, provide a video URL",
-            placeholder="https://www.youtube.com/watch?v=...",
-            key="getting_started_url"
-        )
-
-        if st.button("Save 'Getting Started' Video", key="save_getting_started"):
-            source_to_save = None
-            if uploaded_file is not None:
-                try:
-                    # Create a unique filename to avoid overwrites
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    # Sanitize filename
-                    safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '', uploaded_file.name)
-                    filename = f"getting_started_{timestamp}_{safe_filename}"
-                    video_path = os.path.join(VIDEOS_DIR, filename)
-
-                    with open(video_path, "wb") as f:
-                        f.write(uploaded_file.getbuffer())
-                    source_to_save = video_path
-                    st.success(f"File '{uploaded_file.name}' uploaded successfully!")
-                except Exception as e:
-                    st.error(f"Failed to save uploaded file: {e}")
-            elif video_url:
-                source_to_save = video_url
-                st.success("Video URL saved!")
-            else:
-                st.warning("Please upload a file or provide a URL to save.")
-
-            if source_to_save:
-                videos["__getting_started__"] = source_to_save
-                if save_videos_json(videos):
-                    st.rerun() # Rerun to reflect changes immediately
-                # Error is handled inside save_videos_json
-
-        # Display the saved video
-        st.markdown("---")
-        st.markdown("#### Current 'Getting Started' Video")
-        if "__getting_started__" in videos and videos["__getting_started__"]:
-            getting_started_source = videos["__getting_started__"]
+        # Viewer: always allowed to watch
+        if src:
             try:
-                # Apply a narrow layout for consistency with the intro video
                 _ , col_vid_gs, _ = st.columns([1, 2, 1])
                 with col_vid_gs:
-                    if getting_started_source.startswith(("http", "https")):
-                         st.video(getting_started_source)
-                    elif os.path.exists(getting_started_source):
-                         st.video(getting_started_source)
+                    if src.startswith(("http", "https")):
+                         st.video(src)
+                    elif os.path.exists(src):
+                         st.video(src)
                     else:
                          st.warning("Saved video file not found. It may have been moved or deleted.")
             except Exception as e:
                 st.error(f"Could not display video: {e}")
         else:
             st.info("No 'Getting Started' video has been saved yet.")
+
+        # Admin-only controls
+        if ADMIN_UI:
+            with st.expander("🔧 Admin: Set / Change 'Getting Started' Video", expanded=False):
+                uploaded_file = st.file_uploader(
+                    "Upload a video file",
+                    type=["mp4", "mov", "m4v"],
+                    key="getting_started_uploader"
+                )
+                video_url = st.text_input(
+                    "Or, provide a video URL",
+                    placeholder="https://www.youtube.com/watch?v=...",
+                    key="getting_started_url"
+                )
+
+                c1, c2 = st.columns(2)
+                with c1:
+                    if st.button("Save Video", key="save_getting_started", type="primary"):
+                        source_to_save = None
+                        if uploaded_file is not None:
+                            try:
+                                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '', uploaded_file.name)
+                                filename = f"getting_started_{timestamp}_{safe_filename}"
+                                video_path = os.path.join(VIDEOS_DIR, filename)
+
+                                with open(video_path, "wb") as f:
+                                    f.write(uploaded_file.getbuffer())
+                                source_to_save = video_path
+                                st.success(f"File '{uploaded_file.name}' uploaded successfully!")
+                            except Exception as e:
+                                st.error(f"Failed to save uploaded file: {e}")
+                        elif video_url:
+                            source_to_save = video_url
+                            st.success("Video URL saved!")
+                        else:
+                            st.warning("Please upload a file or provide a URL to save.")
+
+                        if source_to_save:
+                            videos["__getting_started__"] = source_to_save
+                            if save_videos_json(videos):
+                                st.rerun()
+                with c2:
+                    if src and st.button("Delete Video", key="delete_getting_started"):
+                        if "__getting_started__" in videos:
+                            del videos["__getting_started__"]
+                            if save_videos_json(videos):
+                                st.success("Deleted 'Getting Started' video.")
+                                st.rerun()
     # --- MODIFICATION END ---
 
 
@@ -1081,7 +1121,7 @@ def render_workout_overview():
 
     with tab4:
         st.markdown("""
-        ## 👩‍🏫 About Your Coach - Joane Aristilde
+        ## 👩‍🏫 About HOURGLASS FITNESS TRANSFORMATION 
         """)
 
         col1, col2 = st.columns([1, 2])
@@ -1091,14 +1131,15 @@ def render_workout_overview():
             coach_photo_path = "coach_photo.jpg"
             if os.path.exists(coach_photo_path):
                 st.image(coach_photo_path, caption="Joane Aristilde", width=250)
-            elif ADMIN_MODE:
+            elif ADMIN_UI:
                 st.info("Upload coach_photo.jpg to display photo")
-                uploaded_photo = st.file_uploader("Upload Coach Photo", type=['jpg', 'jpeg', 'png'], key="coach_photo_upload_overview")
-                if uploaded_photo:
-                    with open("coach_photo.jpg", "wb") as f:
-                        f.write(uploaded_photo.getbuffer())
-                    st.success("Photo uploaded! Refresh to see it.")
-                    st.rerun()
+                with st.expander("🔧 Admin: Upload Coach Photo"):
+                    uploaded_photo = st.file_uploader("Upload Coach Photo", type=['jpg', 'jpeg', 'png'], key="coach_photo_upload_overview")
+                    if uploaded_photo:
+                        with open("coach_photo.jpg", "wb") as f:
+                            f.write(uploaded_photo.getbuffer())
+                        st.success("Photo uploaded! Refresh to see it.")
+                        st.rerun()
 
         with col2:
             st.markdown("""
@@ -1135,13 +1176,12 @@ def render_workout_tracker():
     st.markdown("# 💪 Workout Tracker")
 
     # Show admin mode status
-    if ADMIN_MODE:
+    if ADMIN_UI:
         st.success("🔧 **Admin Mode Active** - You can upload/manage videos directly in each exercise")
 
     # Admin panel at top if in admin mode (for managing all videos at once)
-    if ADMIN_MODE:
-        with st.expander("🔧 Admin: Bulk Video Manager (Optional)"):
-            render_admin_video_manager()
+    if ADMIN_UI:
+        render_admin_video_manager()
 
     # Level selection
     col1, col2, col3 = st.columns([1, 1, 2])
@@ -1557,6 +1597,7 @@ def sidebar_navigation():
     """Sidebar navigation - ENHANCED"""
     with st.sidebar:
         st.markdown("# 🏋️ Navigation")
+        st.caption(f"Admin UI: {'ON' if ADMIN_UI else 'OFF'} • Read-only: {'ON' if READ_ONLY else 'OFF'}")
 
         # Navigation buttons
         pages = {
@@ -1591,7 +1632,7 @@ def sidebar_navigation():
             st.metric("Weight Entries", entries)
 
         # Show admin mode indicator
-        if ADMIN_MODE:
+        if ADMIN_UI:
             st.markdown("---")
             st.success("🔧 Admin Mode Active")
 
