@@ -1,0 +1,7 @@
+videos/
+uploaded_content/
+.streamlit/secrets.toml
+coach_photo.jpg
+*.mp4
+*.mov
+*.m4v
