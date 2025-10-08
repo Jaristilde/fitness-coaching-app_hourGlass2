@@ -11,6 +11,7 @@ const supabase = createClient(
 );
 
 const DEMO_USER_ID = 'demo-user-123';
+const BASE_URL = import.meta.env.BASE_URL;
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'home' | 'workouts' | 'meals'>('home');
@@ -190,7 +191,7 @@ function App() {
             </div>
             <div className="flex-1 h-full flex items-end justify-end">
               <img
-                src="/CoachJ_inPink.png"
+                src={`${BASE_URL}CoachJ_inPink.png`}
                 alt="Coach Jo - Hourglass Fitness"
                 className="h-full object-contain object-bottom"
               />
@@ -210,7 +211,7 @@ function App() {
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all hover:scale-105">
               <div className="h-80 overflow-hidden">
                 <img
-                  src="/JoaneBarbellSquat.png"
+                  src={`${BASE_URL}JoaneBarbellSquat.png`}
                   alt="Strength Building"
                   className="w-full h-full object-cover"
                 />
@@ -226,7 +227,7 @@ function App() {
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all hover:scale-105">
               <div className="h-80 overflow-hidden">
                 <img
-                  src="/JoaneSquatting.png"
+                  src={`${BASE_URL}JoaneSquatting.png`}
                   alt="Glute Activation"
                   className="w-full h-full object-cover"
                 />
@@ -242,7 +243,7 @@ function App() {
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all hover:scale-105">
               <div className="h-80 overflow-hidden">
                 <img
-                  src="/Sumo Squats.png"
+                  src={`${BASE_URL}Sumo Squats.png`}
                   alt="Core & Cardio"
                   className="w-full h-full object-cover"
                 />
@@ -260,7 +261,7 @@ function App() {
             <div className="grid md:grid-cols-2">
               <div className="h-[500px]">
                 <img
-                  src="/redbathingsuit.png"
+                  src={`${BASE_URL}redbathingsuit.png`}
                   alt="Nutrition - Coach Jo"
                   className="w-full h-full object-cover"
                 />
@@ -316,7 +317,7 @@ function App() {
               </div>
               <div className="h-[600px] bg-black">
                 <video
-                  src="/Joane_Doing_Squat_Video.mp4"
+                  src={`${BASE_URL}Joane_Doing_Squat_Video.mp4`}
                   className="w-full h-full object-cover"
                   autoPlay
                   loop
@@ -331,7 +332,7 @@ function App() {
             <div className="grid md:grid-cols-2">
               <div className="h-[500px]">
                 <img
-                  src="/Bandglueworkout_Joane.png"
+                  src={`${BASE_URL}Bandglueworkout_Joane.png`}
                   alt="Coach Jo"
                   className="w-full h-full object-cover"
                   style={{ objectPosition: '50% 30%' }}

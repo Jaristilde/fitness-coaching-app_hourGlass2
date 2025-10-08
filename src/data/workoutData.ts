@@ -1,3 +1,4 @@
+const BASE_URL = import.meta.env.BASE_URL;
 export interface Exercise {
   id: string;
   name: string;
@@ -45,14 +46,14 @@ export const workoutData: LevelWorkouts = {
           sets: "1 warm up set",
           reps: "10-12 reps",
           notes: "Approx. 50% of your average working weight",
-          videoUrl: "/RealisticWhiteGirlKickBack.mp4"
+          videoUrl: `${BASE_URL}RealisticWhiteGirlKickBack.mp4`
         },
         {
           id: "l1-mon-3",
           name: "Kickbacks",
           sets: "3 sets (each side)",
           reps: "12-15 reps",
-          videoUrl: "/RealisticWhiteGirlKickBack.mp4"
+          videoUrl: `${BASE_URL}RealisticWhiteGirlKickBack.mp4`
         },
         {
           id: "l1-mon-4",
@@ -118,21 +119,21 @@ export const workoutData: LevelWorkouts = {
           name: "Treadmill Workout",
           sets: "1 min 30 sec",
           reps: "Speed 5.5 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l1-mon-13",
           name: "Treadmill Workout",
           sets: "3 min",
           reps: "Speed 9.5 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l1-mon-14",
           name: "Treadmill Workout",
           sets: "30 sec",
           reps: "Speed 12 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l1-mon-15",
@@ -242,14 +243,14 @@ export const workoutData: LevelWorkouts = {
           name: "Bulgarian Split Squats",
           sets: "1 warm up set",
           reps: "10-12 reps",
-          videoUrl: "/Woman doing Lunges.mp4"
+          videoUrl: `${BASE_URL}Woman doing Lunges.mp4`
         },
         {
           id: "l1-thu-9",
           name: "Bulgarian Split Squats",
           sets: "3 sets (each side)",
           reps: "8 reps",
-          videoUrl: "/Woman doing Lunges.mp4"
+          videoUrl: `${BASE_URL}Woman doing Lunges.mp4`
         },
         {
           id: "l1-thu-10",
@@ -257,7 +258,7 @@ export const workoutData: LevelWorkouts = {
           sets: "1 AMRAP set",
           reps: "As many reps as possible",
           notes: "Without weight",
-          videoUrl: "/Woman doing Lunges.mp4"
+          videoUrl: `${BASE_URL}Woman doing Lunges.mp4`
         },
         {
           id: "l1-thu-11",
@@ -278,21 +279,21 @@ export const workoutData: LevelWorkouts = {
           name: "Treadmill Workout",
           sets: "1 min 30 sec",
           reps: "Speed 5.5 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l1-thu-14",
           name: "Treadmill Workout",
           sets: "3 min",
           reps: "Speed 9.5 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l1-thu-15",
           name: "Treadmill Workout",
           sets: "30 sec",
           reps: "Speed 12 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l1-thu-16",
@@ -365,14 +366,14 @@ export const workoutData: LevelWorkouts = {
           name: "Kickbacks",
           sets: "1 warm up set",
           reps: "10-12 reps",
-          videoUrl: "/RealisticWhiteGirlKickBack.mp4"
+          videoUrl: `${BASE_URL}RealisticWhiteGirlKickBack.mp4`
         },
         {
           id: "l2-mon-3",
           name: "Kickbacks",
           sets: "3 sets (each side)",
           reps: "12-15 reps",
-          videoUrl: "/RealisticWhiteGirlKickBack.mp4"
+          videoUrl: `${BASE_URL}RealisticWhiteGirlKickBack.mp4`
         },
         {
           id: "l2-mon-4",
@@ -575,14 +576,14 @@ export const workoutData: LevelWorkouts = {
           name: "Bulgarian Split Squats",
           sets: "1 warm up set",
           reps: "10-12 reps",
-          videoUrl: "/Woman doing Lunges.mp4"
+          videoUrl: `${BASE_URL}Woman doing Lunges.mp4`
         },
         {
           id: "l2-thu-9",
           name: "Bulgarian Split Squats",
           sets: "3 sets (each side)",
           reps: "8 reps",
-          videoUrl: "/Woman doing Lunges.mp4"
+          videoUrl: `${BASE_URL}Woman doing Lunges.mp4`
         },
         {
           id: "l2-thu-10",
@@ -590,7 +591,7 @@ export const workoutData: LevelWorkouts = {
           sets: "1 AMRAP set",
           reps: "As many reps as possible",
           notes: "Without weight",
-          videoUrl: "/Woman doing Lunges.mp4"
+          videoUrl: `${BASE_URL}Woman doing Lunges.mp4`
         },
         {
           id: "l2-thu-11",
@@ -625,21 +626,21 @@ export const workoutData: LevelWorkouts = {
           name: "Treadmill Workout",
           sets: "4 min",
           reps: "Speed 5.5 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l2-thu-16",
           name: "Treadmill Workout",
           sets: "5 min",
           reps: "Speed 9.5 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l2-thu-17",
           name: "Treadmill Workout",
           sets: "1 min",
           reps: "Speed 12 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l2-thu-18",
@@ -734,14 +735,14 @@ export const workoutData: LevelWorkouts = {
           name: "Bulgarian Split Squats",
           sets: "1 warm up set",
           reps: "10-12 reps",
-          videoUrl: "/Woman doing Lunges.mp4"
+          videoUrl: `${BASE_URL}Woman doing Lunges.mp4`
         },
         {
           id: "l2-sat-9",
           name: "Bulgarian Split Squats",
           sets: "3 sets (each side)",
           reps: "8 reps",
-          videoUrl: "/Woman doing Lunges.mp4"
+          videoUrl: `${BASE_URL}Woman doing Lunges.mp4`
         },
         {
           id: "l2-sat-10",
@@ -749,7 +750,7 @@ export const workoutData: LevelWorkouts = {
           sets: "1 AMRAP set",
           reps: "As many reps as possible",
           notes: "Without weight",
-          videoUrl: "/Woman doing Lunges.mp4"
+          videoUrl: `${BASE_URL}Woman doing Lunges.mp4`
         },
         {
           id: "l2-sat-11",
@@ -784,21 +785,21 @@ export const workoutData: LevelWorkouts = {
           name: "Treadmill Workout",
           sets: "4 min",
           reps: "Speed 5.5 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l2-sat-16",
           name: "Treadmill Workout",
           sets: "5 min",
           reps: "Speed 9.5 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l2-sat-17",
           name: "Treadmill Workout",
           sets: "1 min",
           reps: "Speed 12 km/h",
-          videoUrl: "/Joane_Trademil.mp4"
+          videoUrl: `${BASE_URL}Joane_Trademil.mp4`
         },
         {
           id: "l2-sat-18",
