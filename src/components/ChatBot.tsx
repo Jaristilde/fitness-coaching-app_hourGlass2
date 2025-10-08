@@ -56,28 +56,44 @@ export default function ChatBot({ supabase, userId }: ChatBotProps) {
     setIsLoading(true);
 
     try {
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fitness-chat`;
-      const response = await fetch(apiUrl, {
+      // Call OpenAI directly
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: textToSend,
-          userId: userId,
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful and knowledgeable fitness coach. Provide personalized advice on workouts, nutrition, and general fitness. Be encouraging and motivating. Keep responses concise and actionable.'
+            },
+            ...messages.map(msg => ({
+              role: msg.role,
+              content: msg.content
+            })),
+            {
+              role: 'user',
+              content: textToSend
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        throw new Error('Failed to get response from OpenAI');
       }
 
       const data = await response.json();
+      const aiResponse = data.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response.";
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.response,
+        content: aiResponse,
         timestamp: new Date(),
       };
 
@@ -107,73 +123,71 @@ export default function ChatBot({ supabase, userId }: ChatBotProps) {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-pink-500 to-teal-400 rounded-full shadow-2xl hover:shadow-pink-500/50 transition-all hover:scale-110 flex items-center justify-center z-50 group"
+          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-pink-500 to-teal-400 text-white rounded-full shadow-2xl hover:shadow-pink-500/50 transition-all duration-300 flex items-center justify-center z-50 hover:scale-110 group"
+          aria-label="Open chat"
         >
-          <MessageCircle className="w-7 h-7 text-white group-hover:scale-110 transition-transform" />
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-teal-400 rounded-full animate-ping"></div>
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-teal-400 rounded-full"></div>
+          <MessageCircle className="w-7 h-7 group-hover:scale-110 transition-transform" />
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
         </button>
       )}
 
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-3xl shadow-2xl flex flex-col z-50 border border-gray-200">
-          <div className="bg-gradient-to-r from-pink-500 to-teal-400 p-5 rounded-t-3xl flex items-center justify-between">
+        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-3xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-200">
+          <div className="bg-gradient-to-r from-pink-500 to-teal-400 p-6 text-white rounded-t-3xl flex items-center justify-between shadow-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <Sparkles className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-lg">AI Fitness Coach</h3>
-                <p className="text-white/80 text-xs">Powered by your data</p>
+                <h3 className="font-bold text-lg">AI Fitness Coach</h3>
+                <p className="text-sm text-white/90">Powered by your data</p>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="w-8 h-8 hover:bg-white/20 rounded-lg transition-colors flex items-center justify-center"
+              className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl hover:bg-white/30 transition-colors flex items-center justify-center"
+              aria-label="Close chat"
             >
-              <X className="w-5 h-5 text-white" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white">
             {messages.map((message, index) => (
               <div
                 key={index}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
                     message.role === 'user'
                       ? 'bg-gradient-to-r from-pink-500 to-teal-400 text-white'
-                      : 'bg-white text-gray-800 shadow-sm border border-gray-200'
+                      : 'bg-white text-gray-800 border border-gray-200'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                  <span
-                    className={`text-xs mt-1 block ${
-                      message.role === 'user' ? 'text-white/70' : 'text-gray-400'
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                  <p
+                    className={`text-xs mt-2 ${
+                      message.role === 'user' ? 'text-white/70' : 'text-gray-500'
                     }`}
                   >
-                    {message.timestamp.toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
               </div>
             ))}
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-white text-gray-800 shadow-sm border border-gray-200 rounded-2xl px-4 py-3">
+                <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm">
                   <Loader2 className="w-5 h-5 animate-spin text-pink-500" />
                 </div>
               </div>
             )}
 
             {messages.length === 1 && !isLoading && (
-              <div className="space-y-2 mt-4">
-                <p className="text-xs text-gray-500 font-medium px-2">Quick Actions:</p>
+              <div className="space-y-2 pt-2">
+                <p className="text-xs font-medium text-gray-600 px-2">Quick actions:</p>
                 {quickActions.map((action, index) => (
                   <button
                     key={index}
