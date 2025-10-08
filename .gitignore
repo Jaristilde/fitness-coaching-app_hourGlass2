@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 logs
 *.log
 npm-debug.log*
@@ -21,3 +22,12 @@ dist-ssr
 *.sln
 *.sw?
 .env
+=======
+videos/
+uploaded_content/
+.streamlit/secrets.toml
+coach_photo.jpg
+*.mp4
+*.mov
+*.m4v
+>>>>>>> b224af806580cb911618424f1864dcc124bec7e0
