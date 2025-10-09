@@ -1,4 +1,3 @@
-// Macro Calculator with Feet/Inches Height Input
 import { useState, useEffect } from 'react';
 import { Calculator, TrendingDown, Minus, Plus } from 'lucide-react';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -33,10 +32,6 @@ export default function MacroCalculator({ supabase, userId }: MacroCalculatorPro
     fat_g: 39,
   });
   const [loading, setLoading] = useState(true);
-  
-  // Separate state for feet and inches display
-  const [heightFeet, setHeightFeet] = useState(Math.floor(profile.height_inches / 12));
-  const [heightInches, setHeightInches] = useState(profile.height_inches % 12);
 
   const activityLevels = [
     { value: 'Sedentary', multiplier: 1.2, label: 'Sedentary (little/no exercise)' },
@@ -56,12 +51,6 @@ export default function MacroCalculator({ supabase, userId }: MacroCalculatorPro
     loadProfile();
   }, []);
 
-  // Update feet/inches when profile changes
-  useEffect(() => {
-    setHeightFeet(Math.floor(profile.height_inches / 12));
-    setHeightInches(profile.height_inches % 12);
-  }, [profile.height_inches]);
-
   const loadProfile = async () => {
     try {
       const { data } = await supabase
@@ -78,23 +67,6 @@ export default function MacroCalculator({ supabase, userId }: MacroCalculatorPro
     } finally {
       setLoading(false);
     }
-  };
-
-  const updateHeight = (feet: number, inches: number) => {
-    const totalInches = feet * 12 + inches;
-    setProfile({ ...profile, height_inches: totalInches });
-  };
-
-  const handleFeetChange = (feet: number) => {
-    const newFeet = Math.max(0, Math.min(8, feet)); // Limit 0-8 feet
-    setHeightFeet(newFeet);
-    updateHeight(newFeet, heightInches);
-  };
-
-  const handleInchesChange = (inches: number) => {
-    const newInches = Math.max(0, Math.min(11, inches)); // Limit 0-11 inches
-    setHeightInches(newInches);
-    updateHeight(heightFeet, newInches);
   };
 
   const calculateMacros = () => {
@@ -182,34 +154,27 @@ export default function MacroCalculator({ supabase, userId }: MacroCalculatorPro
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Height
+                Height (inches)
               </label>
               <div className="flex items-center gap-2">
-                <div className="flex-1 flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={heightFeet}
-                    onChange={(e) => handleFeetChange(parseInt(e.target.value) || 0)}
-                    min="0"
-                    max="8"
-                    className="w-20 px-3 py-3 border-2 border-gray-300 rounded-xl text-center text-lg font-bold focus:outline-none focus:border-pink-400"
-                    placeholder="5"
-                  />
-                  <span className="text-lg font-semibold text-gray-600">ft</span>
-                  <input
-                    type="number"
-                    value={heightInches}
-                    onChange={(e) => handleInchesChange(parseInt(e.target.value) || 0)}
-                    min="0"
-                    max="11"
-                    className="w-20 px-3 py-3 border-2 border-gray-300 rounded-xl text-center text-lg font-bold focus:outline-none focus:border-pink-400"
-                    placeholder="7"
-                  />
-                  <span className="text-lg font-semibold text-gray-600">in</span>
-                </div>
-                <span className="text-sm text-gray-500">
-                  ({profile.height_inches}")
-                </span>
+                <button
+                  onClick={() => adjustValue('height_inches', -1)}
+                  className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
+                >
+                  <Minus className="w-4 h-4 text-gray-600" />
+                </button>
+                <input
+                  type="number"
+                  value={profile.height_inches}
+                  onChange={(e) => setProfile({ ...profile, height_inches: parseInt(e.target.value) || 0 })}
+                  className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-center text-lg font-bold focus:outline-none focus:border-pink-400"
+                />
+                <button
+                  onClick={() => adjustValue('height_inches', 1)}
+                  className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
+                >
+                  <Plus className="w-4 h-4 text-gray-600" />
+                </button>
               </div>
             </div>
 
@@ -232,10 +197,6 @@ export default function MacroCalculator({ supabase, userId }: MacroCalculatorPro
                   onClick={() => adjustValue('age', 1)}
                   className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
                 >
-                  <Plus className="w-4 h-4 text-gray-600" />
-                </button>
-              </div>
-            </div>
                   <Plus className="w-4 h-4 text-gray-600" />
                 </button>
               </div>
