@@ -1,3 +1,4 @@
+// Macro Calculator with Feet/Inches Height Input
 import { useState, useEffect } from 'react';
 import { Calculator, TrendingDown, Minus, Plus } from 'lucide-react';
 import type { SupabaseClient } from '@supabase/supabase-js';
